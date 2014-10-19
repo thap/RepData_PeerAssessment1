@@ -8,18 +8,83 @@ output:
 
 ## Loading and preprocessing the data
 
-
+```{r}
+unzip("activity.zip")
+data <- read.csv("activity.csv")
+```
 
 ## What is mean total number of steps taken per day?
 
-
+```{r}
+# 1
+totalsteps <- tapply(data$steps,data$date,sum,na.rm=T)
+hist(totalsteps)
+# 2
+meansteps <- tapply(data$steps,data$date,mean,na.rm=T)
+hist(meansteps)
+mediansteps <- tapply(data$steps,data$date,median,na.rm=T)
+hist(mediansteps)
+print("All the medians are 0 or NA")
+```
 
 ## What is the average daily activity pattern?
 
-
+```{r}
+# 1
+intervals <- factor(data$interval)
+averagesteps <- tapply(data$steps,intervals,mean,na.rm=T)
+intervals <- as.integer(names(averagesteps))
+plot(intervals,averagesteps,type="l",xlab="5-minute interval",ylab="average number of steps")
+# 2
+print("Which 5-minute interval contains the maximum number of steps?")
+which.max(averagesteps)
+```
 
 ## Imputing missing values
 
-
+```{r}
+# 1
+print("The total number of missing values in the dataset:")
+sum(!complete.cases(data))
+# 2 The strategy is to fill in the mean number of steps in the same interval across all date
+# 3
+ndates <- nrow(data)/length(averagesteps)
+repavgsteps <- rep(averagesteps,times=ndates)
+for(i in 1:nrow(data)) {
+    if(is.na(data$steps[i])) {
+        data$steps[i] <- repavgsteps[i]
+    }
+}
+# 4
+totalsteps <- tapply(data$steps,data$date,sum,na.rm=T)
+hist(totalsteps)
+print("There are more days with 10000-15000 total number of steps and less days with other numbers of total steps")
+meansteps <- tapply(data$steps,data$date,mean,na.rm=T)
+hist(meansteps)
+print("There are more days with 30-40 mean number of steps and less days with other mean numbers of steps")
+mediansteps <- tapply(data$steps,data$date,median,na.rm=T)
+hist(mediansteps)
+print("There are mostly days with 0-5 median number of steps and some days with 30-35 median number of steps")
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+wday <- weekdays(as.Date(data$date))
+wdaywend <- rep(NA,nrow(data))
+for(i in 1:nrow(data)) {
+    wdaywend[i] <- if(wday[i]=="Saturday"|wday[i]=="Sunday"){
+        "weekend"
+    }
+    else {
+        "weekday"
+    }
+}
+newdata <- split(data,wdaywend)
+calavgsteps <- function(data) {
+    intervals <- factor(data$interval)
+    tapply(data$steps,intervals,mean,na.rm=T)
+}
+data2 <- sapply(newdata,calavgsteps)
+data2
+```
